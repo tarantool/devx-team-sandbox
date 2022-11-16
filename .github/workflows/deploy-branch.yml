@@ -1,0 +1,64 @@
+name: Deploy branch
+
+on:
+  pull_request:
+jobs:
+  some-job:
+    runs-on: [ 'self-hosted', 'Linux', 'flavor-1-2' ]
+    env:
+      VKTEAMS_BOT_TOKEN: ${{secrets.VKTEAMS_TARANTOOLBOT_TOKEN}}
+    strategy:
+      fail-fast: false
+      matrix:
+        exit: [1]
+    steps:
+      - name: test rerunner
+        id: test-rerunner
+        run: exit ${{ matrix.exit }}
+
+      - name: Send VK Teams message on failures
+        # bot token won't be accessible in the forks
+        if: ${{ failure() && env.VKTEAMS_BOT_TOKEN != '' }}
+        uses: tarantool/actions/report-job-status@master
+        with:
+          bot-token: ${{ env.VKTEAMS_BOT_TOKEN }}
+          chat-id: AojceJ-ylj-n3JQ9
+          job-steps: ${{ ToJson(steps) }}
+
+  other-job:
+    runs-on: ['self-hosted', 'Linux', 'flavor-1-2']
+    env:
+      VKTEAMS_BOT_TOKEN: ${{secrets.VKTEAMS_TARANTOOLBOT_TOKEN}}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sleep: 30
+          - exit: [0, 1]
+    steps:
+      - name: Dump GitHub context
+        id: github_context_step
+        run: echo '${{ toJSON(github) }}'
+      - name: Dump job context
+        run: echo '${{ toJSON(job) }}'
+      - name: Dump strategy context
+        run: echo '${{ toJSON(strategy) }}'
+      - name: Dump matrix context
+        run: echo '${{ toJSON(matrix) }}'
+      - name: sleep rerunner
+        run: sleep ${{ matrix.sleep }}
+        shell: bash
+      - name: test rerunner
+        run: exit ${{ matrix.exit }}
+        id: test-rerunner
+
+      - name: Send VK Teams message on failures
+        # bot token won't be accessible in the forks
+        if: ${{ failure() && env.VKTEAMS_BOT_TOKEN != '' }}
+        uses: tarantool/actions/report-job-status@master
+        with:
+          bot-token: ${{ env.VKTEAMS_BOT_TOKEN }}
+          chat-id: AojceJ-ylj-n3JQ9
+          job-steps: ${{ ToJson(steps) }}
+          job-name: "${{ github.job }} (${{ matrix.exit }})"
