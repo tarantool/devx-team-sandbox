@@ -1,0 +1,30 @@
+name: Pass-fail-pass
+
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  other-job:
+    runs-on: ['self-hosted', 'Linux', 'flavor-1-2']
+    env:
+      VKTEAMS_BOT_TOKEN: ${{secrets.VKTEAMS_TARANTOOLBOT_TOKEN}}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sleep: 1
+            exit: 0
+    steps:
+      - run: sleep ${{ matrix.sleep }}
+      - run: exit ${{ matrix.exit }}
+
+      - name: Send VK Teams message on failures
+        # bot token won't be accessible in the forks
+        if: ${{ failure() && env.VKTEAMS_BOT_TOKEN != '' }}
+        uses: tarantool/actions/report-job-status@master
+        with:
+          bot-token: ${{ env.VKTEAMS_BOT_TOKEN }}
+          chat-id: AojceJ-ylj-n3JQ9
+          job-steps: ${{ ToJson(steps) }}
+          job-name: "${{ github.job }} (${{ matrix.exit }})"
