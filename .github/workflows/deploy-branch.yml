@@ -3,6 +3,8 @@ name: Deploy branch
 on:
   pull_request:
   push:
+  workflow_dispatch:
+
 jobs:
   other-job:
     runs-on: ['self-hosted', 'Linux', 'flavor-1-2']
